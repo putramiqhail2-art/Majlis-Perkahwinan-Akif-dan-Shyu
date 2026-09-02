@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>Jemputan Majlis Raikan Cinta - Shyuhada & Akif</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#374a35;
+    --sage:#6f9a56;
+    --sage-bright:#8ec46e;
+    --sage-deep:#3f5e34;
+    --ivory:#fbf8ef;
+    --gold:#c9a15e;
+    --gold-soft:#e0bd85;
+    --rose:#e0968c;
+    --line: rgba(201,161,94,0.35);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; color-scheme: light; }
+  body{
+    background: var(--ivory);
+    color: var(--ink);
+    font-family:'Jost', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
+  }
+
+  /* ============ AMBIENT FLOATERS (doves + leaves) ============ */
+  .floaters{ position:fixed; inset:0; pointer-events:none; z-index:0; }
+  .floaters svg{ position:absolute; opacity:0.16; }
+
+  @keyframes floaty{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-10px) rotate(4deg); }
+  }
+  @keyframes rise{
+    from{ opacity:0; transform:translateY(16px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  @keyframes bob{
+    0%,100%{ transform:translate(-50%,0); }
+    50%{ transform:translate(-50%,6px); }
+  }
+
+  .wrap{ max-width:640px; margin:0 auto; padding:0 22px 60px; position:relative; z-index:1; }
+
+  /* ============ HERO ============ */
+  .hero{
+    min-height:100svh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+    padding:60px 24px;
+    position:relative;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(111,154,86,0.12), transparent 60%),
+      var(--ivory);
+  }
+
+  .branch{ position:absolute; width:130px; opacity:0.85; stroke: var(--sage-bright); fill: var(--sage-bright); }
+  .branch.tl{ top:14px; left:8px; }
+  .branch.br{ bottom:14px; right:8px; transform:rotate(180deg); }
+
+  .bismillah{
+    font-family:'Cormorant Garamond', serif;
+    font-size:1.05rem; color:var(--sage-deep);
+    margin-bottom:18px; opacity:0;
+    animation: rise 1s ease forwards 0.1s;
+  }
+  .eyebrow{
+    font-size:0.72rem; letter-spacing:0.4em; text-transform:uppercase;
+    color:var(--gold); margin-bottom:20px; opacity:0;
+    animation: rise 1s ease forwards 0.3s;
+  }
+  .dove-mark{
+    font-size:1.5rem; margin-bottom:12px; opacity:0;
+    animation: rise 1s ease forwards 0.45s, floaty 4s ease-in-out infinite 1.4s;
+  }
+  .names{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:500;
+    font-size: clamp(2.5rem, 9vw, 3.9rem);
+    line-height:1.08;
+    color: var(--sage-deep);
+    opacity:0;
+    animation: rise 1.1s ease forwards 0.55s;
+  }
+  .amp{ display:block; font-style:italic; font-size:0.5em; color:var(--rose); margin:6px 0; }
+
+  .divider{
+    width:110px; height:1px; background:var(--line);
+    margin:26px auto; position:relative; opacity:0;
+    animation: rise 1s ease forwards 0.8s;
+  }
+  .divider::before{
+    content:'✦'; position:absolute; left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    background:var(--ivory); padding:0 10px;
+    color:var(--gold); font-size:0.78rem;
+  }
+
+  .subtext{
+    font-size:0.92rem; color:var(--sage);
+    max-width:400px; line-height:1.85;
+    opacity:0; animation: rise 1s ease forwards 1s;
+  }
+
+  /* countdown */
+  .countdown{
+    display:flex; gap:14px; margin-top:34px;
+    opacity:0; animation: rise 1s ease forwards 1.15s;
+  }
+  .cd-box{
+    background:#fff; border:1px solid var(--line); border-radius:8px;
+    padding:12px 14px; min-width:64px;
+    box-shadow:0 8px 20px -14px rgba(63,94,52,0.4);
+  }
+  .cd-num{
+    font-family:'Cormorant Garamond', serif; font-size:1.6rem;
+    color:var(--sage-deep); line-height:1;
+  }
+  .cd-label{
+    font-size:0.6rem; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--gold); margin-top:4px;
+  }
+
+  .scroll-cue{
+    position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
+    font-size:0.66rem; letter-spacing:0.3em; text-transform:uppercase;
+    color:var(--gold); opacity:0;
+    animation: rise 1s ease forwards 1.4s, bob 2.2s ease-in-out infinite 2.2s;
+  }
+
+  /* ============ SECTIONS SHARED ============ */
+  section{ padding:64px 0 6px; position:relative; }
+  .leaf-divider{
+    display:flex; justify-content:center; margin: 6px 0 40px;
+  }
+  .leaf-divider svg{ width:70px; height:auto; stroke:var(--sage-bright); fill:var(--sage-bright); opacity:0.8; }
+
+  .kicker{
+    text-align:center; font-size:0.66rem; letter-spacing:0.34em; text-transform:uppercase;
+    color:var(--gold); margin-bottom:12px;
+  }
+  .section-title{
+    text-align:center; font-family:'Cormorant Garamond', serif;
+    font-size: clamp(1.7rem, 5vw, 2.3rem);
+    color:var(--sage-deep); margin-bottom:30px; font-weight:500;
+  }
+
+  .doa{ text-align:center; font-size:0.98rem; line-height:2; color:var(--ink); padding:0 8px; }
+  .parents{
+    text-align:center; font-family:'Cormorant Garamond', serif;
+    font-size:1.3rem; color:var(--sage-deep); margin:20px 0; line-height:1.7;
+  }
+
+  .couple-card{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    margin:40px 0 6px; position:relative;
+  }
+  .person{ text-align:center; width:100%; }
+  .person .label{
+    font-size:0.63rem; letter-spacing:0.26em; text-transform:uppercase;
+    color:var(--gold); margin-bottom:8px;
+  }
+  .person .name{
+    font-family:'Cormorant Garamond', serif; font-style:italic;
+    font-size:1.42rem; color:var(--sage-deep); line-height:1.35;
+  }
+  .amp-mid{
+    font-family:'Cormorant Garamond', serif; font-size:1.6rem;
+    color:var(--rose); margin:10px 0;
+    display:flex; align-items:center; gap:10px;
+  }
+  .amp-mid::before, .amp-mid::after{
+    content:''; width:34px; height:1px; background:var(--line);
+  }
+
+  @media (min-width:480px){
+    .couple-card{ flex-direction:row; align-items:flex-start; justify-content:center; gap:22px; }
+    .person{ flex:1; min-width:150px; width:auto; }
+    .amp-mid{ padding-top:16px; margin:0; }
+    .amp-mid::before, .amp-mid::after{ display:none; }
+  }
+
+  .details-grid{ display:grid; grid-template-columns:1fr; gap:14px; margin-top:8px; }
+  .detail-card{
+    background:#fff; border:1px solid var(--line); border-radius:8px;
+    padding:20px 22px; display:flex; gap:16px; align-items:flex-start;
+    box-shadow:0 8px 22px -16px rgba(63,94,52,0.4);
+  }
+  .detail-icon{ font-size:1.25rem; flex-shrink:0; width:30px; text-align:center; padding-top:2px; }
+  .detail-label{
+    font-size:0.66rem; letter-spacing:0.2em; text-transform:uppercase;
+    color:var(--gold); margin-bottom:5px;
+  }
+  .detail-value{ font-size:1.02rem; color:var(--ink); line-height:1.5; }
+  .detail-sub{ font-size:0.84rem; color:var(--sage); margin-top:2px; }
+
+  .rsvp-box{
+    background: var(--sage-deep); border-radius:10px;
+    padding:36px 24px; margin-top:16px; color:var(--ivory);
+  }
+  .rsvp-box .kicker{ color:var(--gold-soft); }
+  .rsvp-box .section-title{ color:var(--ivory); margin-bottom:8px; }
+  .rsvp-lead{
+    text-align:center; font-size:0.9rem; color:#e3ecda;
+    margin-bottom:26px; line-height:1.75;
+  }
+
+  /* RSVP form fields */
+  .field{ margin-bottom:16px; }
+  .field label{
+    display:block; font-size:0.68rem; letter-spacing:0.14em; text-transform:uppercase;
+    color: var(--gold-soft); margin-bottom:7px;
+  }
+  .field input, .field textarea{
+    width:100%; background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.25); border-radius:6px;
+    padding:12px 14px; color:var(--ivory);
+    font-family:'Jost', sans-serif; font-size:0.94rem;
+  }
+  .field input::placeholder, .field textarea::placeholder{ color:rgba(255,255,255,0.45); }
+  .field input:focus, .field textarea:focus{
+    outline:none; border-color:var(--gold-soft); background:rgba(255,255,255,0.13);
+  }
+  .attend-toggle{ display:flex; gap:10px; }
+  .attend-btn{
+    flex:1; padding:12px 8px; border-radius:6px;
+    border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.08);
+    color:var(--ivory); font-family:'Jost', sans-serif; font-size:0.88rem;
+    cursor:pointer; transition:all 0.2s ease;
+  }
+  .attend-btn.active-yes{ background:var(--sage-bright); border-color:var(--sage-bright); color:#233b1b; font-weight:600; }
+  .attend-btn.active-no{ background:var(--rose); border-color:var(--rose); color:#3b1a16; font-weight:600; }
+  .submit-btn{
+    width:100%; padding:15px; margin-top:6px;
+    border:none; border-radius:999px;
+    background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+    color:#3f5e34; font-family:'Jost', sans-serif; font-weight:600;
+    font-size:0.92rem; letter-spacing:0.4px; cursor:pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+  }
+  .submit-btn:hover{ box-shadow:0 12px 26px -12px rgba(201,161,94,0.6); transform:translateY(-1px); }
+  .submit-btn:active{ transform:scale(0.98); }
+  .submit-btn:disabled{ opacity:0.6; cursor:default; }
+  .status-msg{
+    text-align:center; font-size:0.86rem; margin-top:14px; min-height:20px;
+    color:#e0bd85;
+  }
+  .rsvp-fallback{
+    text-align:center; font-size:0.78rem; color:#c7d4bd; margin-top:16px;
+  }
+  .rsvp-fallback a{ color:var(--gold-soft); }
+
+  .btn-group{ display:flex; flex-direction:column; gap:12px; }
+
+  .btn{
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    padding:14px; border-radius:999px; text-decoration:none;
+    font-size:0.85rem; letter-spacing:0.4px; font-weight:500;
+    transition: transform 200ms ease, background 250ms ease, box-shadow 250ms ease;
+  }
+  .btn-map{ border:1px solid var(--gold-soft); color:var(--gold-soft); background:transparent; }
+  .btn-map:hover{ background:rgba(224,189,133,0.12); transform:translateY(-1px); }
+  .btn-rsvp{
+    background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+    color:#3f5e34; box-shadow:0 10px 24px -12px rgba(201,161,94,0.55);
+  }
+  .btn-rsvp:hover{ transform:translateY(-1px); box-shadow:0 14px 28px -12px rgba(201,161,94,0.7); }
+  .btn:active{ transform:translateY(0) scale(0.98); }
+
+  footer{
+    text-align:center; padding:50px 20px 34px;
+    font-family:'Cormorant Garamond', serif; font-style:italic;
+    color:var(--sage); font-size:1.08rem; line-height:1.8;
+  }
+  footer .small{
+    font-family:'Jost', sans-serif; font-style:normal;
+    font-size:0.68rem; letter-spacing:0.2em; text-transform:uppercase;
+    color:var(--gold); margin-top:12px;
+  }
+
+  /* ============ MUSIC TOGGLE ============ */
+  .music-btn{
+    position:fixed; bottom:22px; right:22px; z-index:10;
+    width:52px; height:52px; border-radius:50%;
+    background:var(--sage-deep); color:var(--ivory);
+    border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 24px -10px rgba(63,94,52,0.6);
+    transition: transform 200ms ease;
+  }
+  .music-btn:hover{ transform: scale(1.06); }
+  .music-btn:active{ transform: scale(0.96); }
+  .music-btn svg{ width:20px; height:20px; }
+  .music-btn .bar{ animation: eq 900ms ease-in-out infinite; transform-origin: bottom; }
+  .music-btn.paused .bar{ animation-play-state: paused; }
+  @keyframes eq{
+    0%,100%{ transform: scaleY(0.4); }
+    50%{ transform: scaleY(1); }
+  }
+
+  @media (min-width:520px){ .details-grid{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="floaters" id="floaters"></div>
+
+<div class="hero">
+  <svg class="branch tl" viewBox="0 0 160 160"><path d="M2 4 C 30 20, 45 45, 55 78 C 62 100, 78 118, 105 128" fill="none" stroke-width="1.4"/>
+    <ellipse cx="20" cy="16" rx="9" ry="4" transform="rotate(35 20 16)"/><ellipse cx="34" cy="30" rx="10" ry="4.5" transform="rotate(50 34 30)"/>
+    <ellipse cx="47" cy="52" rx="9" ry="4" transform="rotate(70 47 52)"/><ellipse cx="58" cy="76" rx="10" ry="4.5" transform="rotate(95 58 76)"/>
+    <ellipse cx="70" cy="98" rx="9" ry="4" transform="rotate(115 70 98)"/></svg>
+  <svg class="branch br" viewBox="0 0 160 160"><path d="M2 4 C 30 20, 45 45, 55 78 C 62 100, 78 118, 105 128" fill="none" stroke-width="1.4"/>
+    <ellipse cx="20" cy="16" rx="9" ry="4" transform="rotate(35 20 16)"/><ellipse cx="34" cy="30" rx="10" ry="4.5" transform="rotate(50 34 30)"/>
+    <ellipse cx="47" cy="52" rx="9" ry="4" transform="rotate(70 47 52)"/><ellipse cx="58" cy="76" rx="10" ry="4.5" transform="rotate(95 58 76)"/>
+    <ellipse cx="70" cy="98" rx="9" ry="4" transform="rotate(115 70 98)"/></svg>
+
+  <div class="bismillah">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْم</div>
+  <div class="eyebrow">Jemputan Majlis Raikan Cinta</div>
+  <div class="dove-mark">🕊️</div>
+  <h1 class="names">Shyuhada<span class="amp">&amp;</span>Akif Danial</h1>
+  <div class="divider"></div>
+  <p class="subtext">Assalamualaikum w.b.t &amp; Salam Sejahtera. Dengan penuh kesyukuran, sudilah kiranya Dato' / Datin / Tuan / Puan / Encik / Cik menghadiri majlis perkahwinan kami.</p>
+
+  <div class="countdown" id="countdown">
+    <div class="cd-box"><div class="cd-num" id="cd-days">00</div><div class="cd-label">Hari</div></div>
+    <div class="cd-box"><div class="cd-num" id="cd-hours">00</div><div class="cd-label">Jam</div></div>
+    <div class="cd-box"><div class="cd-num" id="cd-mins">00</div><div class="cd-label">Minit</div></div>
+    <div class="cd-box"><div class="cd-num" id="cd-secs">00</div><div class="cd-label">Saat</div></div>
+  </div>
+
+  <div class="scroll-cue">Tatal ke bawah ↓</div>
+</div>
+
+<div class="wrap">
+
+  <section id="doa-section">
+    <p class="kicker">Dengan Penuh Kesyukuran</p>
+    <p class="doa">Kami, keluarga bahagia,</p>
+    <p class="parents">Md Sariyan bin Repan &amp;<br>Norhaidah binti Paradi</p>
+    <p class="doa">dengan segala hormatnya menjemput Dato' | Datin | Tuan | Puan | Encik | Cik ke Majlis Raikan Cinta sempena perkahwinan anakanda kami:</p>
+
+    <div class="couple-card">
+      <div class="person">
+        <div class="label">Pengantin Perempuan</div>
+        <div class="name">Nurul Shyuhada<br>binti Md Sariyan</div>
+      </div>
+      <div class="amp-mid">&amp;</div>
+      <div class="person">
+        <div class="label">Pengantin Lelaki</div>
+        <div class="name">Putra Akif Danial<br>bin Zehuri</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="leaf-divider">
+    <svg viewBox="0 0 100 30"><path d="M2 15 Q 25 2, 50 15 T 98 15" fill="none" stroke-width="1.3"/>
+      <ellipse cx="20" cy="10" rx="6" ry="2.6" transform="rotate(-25 20 10)"/>
+      <ellipse cx="50" cy="15" rx="6" ry="2.6"/>
+      <ellipse cx="80" cy="10" rx="6" ry="2.6" transform="rotate(25 80 10)"/></svg>
+  </div>
+
+  <section id="details-section">
+    <p class="kicker">Butiran Majlis</p>
+    <h2 class="section-title">Tarikh &amp; Tempat</h2>
+    <div class="details-grid">
+      <div class="detail-card">
+        <div class="detail-icon">🗓️</div>
+        <div><div class="detail-label">Tarikh &amp; Hari</div><div class="detail-value">Ahad, 13 Disember 2026</div></div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-icon">🕙</div>
+        <div><div class="detail-label">Masa</div><div class="detail-value">11:30 pagi &ndash; 4:00 petang</div></div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-icon">📍</div>
+        <div>
+          <div class="detail-label">Tempat</div>
+          <div class="detail-value">Chik Aim Nasi Kenduri Event Hall &amp; Cafe</div>
+          <div class="detail-sub">86200 Simpang Renggam, Johor</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="leaf-divider">
+    <svg viewBox="0 0 100 30"><path d="M2 15 Q 25 2, 50 15 T 98 15" fill="none" stroke-width="1.3"/>
+      <ellipse cx="20" cy="10" rx="6" ry="2.6" transform="rotate(-25 20 10)"/>
+      <ellipse cx="50" cy="15" rx="6" ry="2.6"/>
+      <ellipse cx="80" cy="10" rx="6" ry="2.6" transform="rotate(25 80 10)"/></svg>
+  </div>
+
+  <section id="rsvp-section">
+    <div class="rsvp-box">
+      <p class="kicker">Sahkan Kehadiran</p>
+      <h2 class="section-title">RSVP</h2>
+      <p class="rsvp-lead">Sila isi ruangan di bawah untuk memaklumkan kehadiran anda. Ini membantu kami menguruskan majlis dengan lebih baik.</p>
+
+      <form id="rsvpForm">
+        <div class="field">
+          <label>Nama Penuh</label>
+          <input type="text" name="nama" placeholder="Nama anda" required>
+        </div>
+
+        <div class="field">
+          <label>Kehadiran</label>
+          <div class="attend-toggle">
+            <button type="button" class="attend-btn" data-val="Hadir">Hadir</button>
+            <button type="button" class="attend-btn" data-val="Tidak Hadir">Tidak Hadir</button>
+          </div>
+          <input type="hidden" name="kehadiran" id="kehadiranInput" required>
+        </div>
+
+        <div class="field">
+          <label>Jumlah Pax</label>
+          <input type="number" name="pax" min="1" value="1">
+        </div>
+
+        <div class="field">
+          <label>Ucapan / Catatan (jika ada)</label>
+          <textarea name="catatan" rows="2" placeholder="Doa & restu buat pengantin..."></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">Hantar RSVP</button>
+        <p class="status-msg" id="statusMsg"></p>
+      </form>
+
+      <p class="rsvp-fallback">Borang tak berfungsi? Hubungi terus melalui <a href="https://wa.me/60123456789" target="_blank">WhatsApp</a>.</p>
+
+      <div class="btn-group" style="margin-top:20px;">
+        <a href="https://maps.google.com/?q=Chik+Aim+Nasi+Kenduri+Event+Hall+%26+Cafe+Simpang+Renggam+Johor" target="_blank" class="btn btn-map">📍 Peta Google Maps</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    "Semoga dengan kehadiran dan doa restu semua akan menyerikan lagi majlis kami."
+    <div class="small">Terima Kasih 🤍</div>
+  </footer>
+
+</div>
+
+<button class="music-btn paused" id="musicBtn" type="button" aria-label="Main atau jeda muzik latar">
+  <svg viewBox="0 0 24 24" fill="currentColor">
+    <rect class="bar" x="4" y="10" width="3" height="8" rx="1"></rect>
+    <rect class="bar" x="10.5" y="6" width="3" height="12" rx="1" style="animation-delay:150ms"></rect>
+    <rect class="bar" x="17" y="9" width="3" height="9" rx="1" style="animation-delay:300ms"></rect>
+  </svg>
+</button>
+<audio id="bgMusic" loop preload="none">
+  <source src="background-music.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+  /* ambient floating doves + leaves */
+  var floatContainer = document.getElementById('floaters');
+  var doveSVG = '<svg width="34" height="34" viewBox="0 0 24 24" style="left:LEFT%; top:TOP%; animation: floaty DURs ease-in-out infinite DELAYs;"><path d="M12 2C10 2 8 4 8 6c0 1-1 1-2 0-1-1-2 0-1 1 1 1 2 3 4 3 0 2 1 3 3 3s3-1 3-3c2 0 3-2 4-3 1-1 0-2-1-1-1 1-2 1-2 0 0-2-2-4-4-4z" fill="#8ec46e"/></svg>';
+  var leafSVG = '<svg width="26" height="26" viewBox="0 0 24 24" style="left:LEFT%; top:TOP%; animation: floaty DURs ease-in-out infinite DELAYs;"><path d="M12 2c5 3 8 8 8 13 0 4-4 7-8 7s-8-3-8-7c0-5 3-10 8-13z" fill="#6f9a56"/></svg>';
+  var html = '';
+  for (var i = 0; i < 6; i++){
+    var left = (i*17+5)%100, top = (i*29+8)%100, dur = 6+i, delay = i*0.5;
+    html += doveSVG.replace('LEFT', left).replace('TOP', top).replace('DUR', dur).replace('DELAY', delay);
+  }
+  for (var j = 0; j < 5; j++){
+    var left2 = (j*23+11)%100, top2 = (j*31+18)%100, dur2 = 7+j, delay2 = j*0.6+0.3;
+    html += leafSVG.replace('LEFT', left2).replace('TOP', top2).replace('DUR', dur2).replace('DELAY', delay2);
+  }
+  floatContainer.innerHTML = html;
+
+  /* countdown to 13 Dec 2026, 11:30 */
+  var target = new Date('2026-12-13T11:30:00+08:00').getTime();
+  function updateCountdown(){
+    var now = new Date().getTime();
+    var diff = target - now;
+    if (diff < 0) diff = 0;
+    var days = Math.floor(diff / (1000*60*60*24));
+    var hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+    var mins = Math.floor((diff % (1000*60*60)) / (1000*60));
+    var secs = Math.floor((diff % (1000*60)) / 1000);
+    document.getElementById('cd-days').textContent = String(days).padStart(2,'0');
+    document.getElementById('cd-hours').textContent = String(hours).padStart(2,'0');
+    document.getElementById('cd-mins').textContent = String(mins).padStart(2,'0');
+    document.getElementById('cd-secs').textContent = String(secs).padStart(2,'0');
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+
+  /* background music toggle */
+  var musicBtn = document.getElementById('musicBtn');
+  var bgMusic = document.getElementById('bgMusic');
+  musicBtn.addEventListener('click', function(){
+    if (bgMusic.paused){
+      bgMusic.play().catch(function(){});
+      musicBtn.classList.remove('paused');
+    } else {
+      bgMusic.pause();
+      musicBtn.classList.add('paused');
+    }
+  });
+
+  /* ===== RSVP FORM (Formspree) =====
+     1. Daftar percuma di https://formspree.io
+     2. Cipta borang baharu, dapatkan pautan macam:
+        https://formspree.io/f/xxxxxxxx
+     3. Tampal pautan tu gantikan "PASTE_YOUR_FORMSPREE_ENDPOINT_HERE" di bawah.
+  */
+  var FORMSPREE_ENDPOINT = "PASTE_YOUR_FORMSPREE_ENDPOINT_HERE";
+
+  var attendBtns = document.querySelectorAll('.attend-btn');
+  var kehadiranInput = document.getElementById('kehadiranInput');
+  attendBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      attendBtns.forEach(function(b){ b.classList.remove('active-yes','active-no'); });
+      kehadiranInput.value = btn.dataset.val;
+      if (btn.dataset.val === 'Hadir'){ btn.classList.add('active-yes'); }
+      else { btn.classList.add('active-no'); }
+    });
+  });
+
+  var rsvpForm = document.getElementById('rsvpForm');
+  var statusMsg = document.getElementById('statusMsg');
+  var submitBtn = document.getElementById('submitBtn');
+
+  rsvpForm.addEventListener('submit', function(e){
+    e.preventDefault();
+
+    if (!kehadiranInput.value){
+      statusMsg.textContent = 'Sila pilih Hadir atau Tidak Hadir.';
+      return;
+    }
+
+    if (FORMSPREE_ENDPOINT.indexOf('https://formspree.io/f/xbgjokzb') !== -1){
+      statusMsg.textContent = 'Borang belum disambungkan. Sila hubungi terus melalui WhatsApp di bawah.';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Menghantar...';
+    statusMsg.textContent = '';
+
+    var formData = new FormData(rsvpForm);
+
+    fetch(FORMSPREE_ENDPOINT, {
+      method: 'POST',
+      body: formData,
+      headers: { 'Accept': 'application/json' }
+    }).then(function(response){
+      if (response.ok){
+        rsvpForm.style.display = 'none';
+        statusMsg.textContent = 'Terima kasih! Kehadiran anda telah disahkan. 🤍';
+      } else {
+        throw new Error('Gagal menghantar');
+      }
+    }).catch(function(){
+      statusMsg.textContent = 'Gagal menghantar. Sila cuba lagi atau hubungi terus melalui WhatsApp.';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Hantar RSVP';
+    });
+  });
+</script>
+
+</body>
+</html>
