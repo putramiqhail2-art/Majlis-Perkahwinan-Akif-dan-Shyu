@@ -513,7 +513,7 @@
         https://formspree.io/f/xxxxxxxx
      3. Tampal pautan tu gantikan "PASTE_YOUR_FORMSPREE_ENDPOINT_HERE" di bawah.
   */
-  var FORMSPREE_ENDPOINT = "PASTE_YOUR_FORMSPREE_ENDPOINT_HERE";
+  var FORMSPREE_ENDPOINT = "https://formspree.io/f/xbgjokzb";
 
   var attendBtns = document.querySelectorAll('.attend-btn');
   var kehadiranInput = document.getElementById('kehadiranInput');
@@ -538,7 +538,7 @@
       return;
     }
 
-    if (FORMSPREE_ENDPOINT.indexOf('https://formspree.io/f/xbgjokzb') !== -1){
+    if (FORMSPREE_ENDPOINT.indexOf('PASTE_YOUR_FORMSPREE_ENDPOINT_HERE') !== -1){
       statusMsg.textContent = 'Borang belum disambungkan. Sila hubungi terus melalui WhatsApp di bawah.';
       return;
     }
