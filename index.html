@@ -254,6 +254,27 @@
     text-align:center; font-size:0.86rem; margin-top:14px; min-height:20px;
     color:#e0bd85;
   }
+  .success-card{
+    display:none;
+    text-align:center;
+    background: rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.25);
+    border-radius:8px;
+    padding:28px 20px;
+    margin-top:6px;
+  }
+  .success-card.show{ display:block; animation: rise 500ms ease forwards; }
+  .success-check{
+    width:44px; height:44px; border-radius:50%;
+    background:var(--sage-bright); color:#233b1b;
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto 14px; font-size:1.4rem;
+  }
+  .success-title{
+    font-family:'Cormorant Garamond', serif; font-size:1.3rem;
+    color:var(--ivory); margin-bottom:6px;
+  }
+  .success-text{ font-size:0.86rem; color:#dbe6cf; line-height:1.6; }
   .rsvp-fallback{
     text-align:center; font-size:0.78rem; color:#c7d4bd; margin-top:16px;
   }
@@ -434,7 +455,13 @@
         <p class="status-msg" id="statusMsg"></p>
       </form>
 
-      <p class="rsvp-fallback">Borang tak berfungsi? Hubungi terus melalui <a href="https://wa.me/60123456789" target="_blank">WhatsApp</a>.</p>
+      <div class="success-card" id="successCard">
+        <div class="success-check">✓</div>
+        <div class="success-title">Terima Kasih!</div>
+        <p class="success-text">Kehadiran anda telah disahkan. Kami tidak sabar untuk berjumpa anda di majlis kami. 🤍</p>
+      </div>
+
+      <p class="rsvp-fallback" id="rsvpFallback">Borang tak berfungsi? Hubungi terus melalui <a href="https://wa.me/60123456789" target="_blank">WhatsApp</a>.</p>
 
       <div class="btn-group" style="margin-top:20px;">
         <a href="https://maps.google.com/?q=Chik+Aim+Nasi+Kenduri+Event+Hall+%26+Cafe+Simpang+Renggam+Johor" target="_blank" class="btn btn-map">📍 Peta Google Maps</a>
@@ -538,7 +565,7 @@
       return;
     }
 
-    if (FORMSPREE_ENDPOINT.indexOf('PASTE_YOUR_FORMSPREE_ENDPOINT_HERE') !== -1){
+    if (FORMSPREE_ENDPOINT.indexOf('PASTE_YOUR') !== -1){
       statusMsg.textContent = 'Borang belum disambungkan. Sila hubungi terus melalui WhatsApp di bawah.';
       return;
     }
@@ -556,7 +583,9 @@
     }).then(function(response){
       if (response.ok){
         rsvpForm.style.display = 'none';
-        statusMsg.textContent = 'Terima kasih! Kehadiran anda telah disahkan. 🤍';
+        document.getElementById('rsvpFallback').style.display = 'none';
+        document.getElementById('successCard').classList.add('show');
+        statusMsg.textContent = '';
       } else {
         throw new Error('Gagal menghantar');
       }
