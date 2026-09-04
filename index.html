@@ -618,14 +618,19 @@
 
   <!-- ================================================================
        MUZIK — EDIT: Muzik
-       Tukar src="" di bawah kepada fail lagu awak (letak dalam folder
-       sama dengan e-card ini), contoh: src="lagu.mp3"
+       Lagu disimpan di GitHub (bukan dalam folder sama dengan HTML ini).
+       Cara dapatkan link yang betul:
+       1. Upload fail mp3 awak ke repo GitHub awak
+       2. Klik fail tu dalam GitHub, klik butang "Download raw file" /
+          "..." > "Copy raw file link" (link akan bermula dengan
+          https://raw.githubusercontent.com/...)
+       3. Tampal link "raw" tu (BUKAN link biasa github.com/.../blob/...,
+          sebab link blob itu halaman paparan sahaja, bukan fail terus)
+          ke dalam src="" di bawah.
        ================================================================ -->
   <audio id="audio-latar" loop preload="none">
-    <!-- EDIT: Muzik — letakkan fail nasheed.mp3 (atau nama lain) dalam folder
-         YANG SAMA dengan fail HTML ini, kemudian pastikan nama fail di bawah
-         sepadan. Contoh: src="nasheed.mp3" -->
-    <source src="nasheed.mp3" type="audio/mpeg">
+    <!-- EDIT: Muzik — tukar URL di bawah kepada link RAW GitHub lagu awak -->
+    <source src="https://raw.githubusercontent.com/USERNAME/REPO/main/nasheed.mp3" type="audio/mpeg">
   </audio>
 
   <!-- ================================================================
@@ -639,7 +644,7 @@
       </div>
       <div class="form-row">
         <input type="text" id="rsvp-nama" placeholder="Nama anda">
-        <select id="rsvp-hadir">
+        <select id="rsvp-hadir" onchange="tukarStatusHadir()">
           <option value="ya">Ya, saya akan hadir</option>
           <option value="tidak">Maaf, saya tidak dapat hadir</option>
         </select>
@@ -725,19 +730,56 @@
   function tutupLembar(id){ document.getElementById(id).classList.remove('buka'); }
   function tutupJikaLuar(e,id){ if(e.target.id===id) tutupLembar(id); }
 
-  // --- Hantar RSVP (disimpan dalam pelayar sahaja — lihat nota di bawah) ---
+  // --- Tukar borang ikut status hadir/tidak ---
+  // Bila "tidak hadir" dipilih: field bilangan tetamu dikosongkan & dimatikan (0)
+  // Bila "ya hadir" dipilih: field bilangan tetamu diaktifkan semula (min 1)
+  function tukarStatusHadir(){
+    const hadir = document.getElementById('rsvp-hadir').value;
+    const bilInput = document.getElementById('rsvp-bil');
+    if(hadir === 'tidak'){
+      bilInput.value = '0';
+      bilInput.disabled = true;
+      bilInput.style.opacity = '0.5';
+    } else {
+      bilInput.disabled = false;
+      bilInput.style.opacity = '1';
+      if(bilInput.value === '0' || bilInput.value === '') bilInput.value = '1';
+    }
+  }
+
+  // --- Hantar RSVP — dipaparkan serta-merta DAN dihantar ke Formspree ---
+  // EDIT: URL Formspree RSVP — buat SATU borang BAHARU di formspree.io khas untuk
+  // RSVP (jangan guna URL yang sama macam borang ucapan), kemudian tukar URL di bawah.
+  const FORMSPREE_RSVP_URL = 'https://formspree.io/f/xbgjokzb';
+
   function hantarRSVP(){
     const nama = document.getElementById('rsvp-nama').value.trim();
+    const hadir = document.getElementById('rsvp-hadir').value;
+    const hadirTeks = hadir === 'ya' ? 'Hadir' : 'Tidak Hadir';
+    const bil = hadir === 'ya' ? document.getElementById('rsvp-bil').value : '0';
+
     if(!nama){ alert('Sila isikan nama anda.'); return; }
+    if(hadir === 'ya' && (!bil || Number(bil) < 1)){ alert('Sila isikan bilangan tetamu.'); return; }
+
     document.getElementById('rsvp-msg').style.display = 'block';
-    // NOTA: RSVP ini hanya paparan di skrin tetamu buat masa ini — ia TIDAK
-    // dihantar ke mana-mana pelayan. Untuk simpan senarai RSVP secara automatik,
-    // sambungkan borang ini ke Google Form / WhatsApp / emel awak.
+
+    // Hantar ke Formspree supaya awak terima emel setiap kali ada RSVP baharu,
+    // dan senarai penuh (termasuk jumlah kehadiran) boleh dilihat di dashboard Formspree
+    const dataRSVP = new FormData();
+    dataRSVP.append('nama', nama);
+    dataRSVP.append('status_kehadiran', hadirTeks);
+    dataRSVP.append('bilangan_tetamu', bil);
+    dataRSVP.append('borang', 'RSVP - Jemputan Perkahwinan');
+    fetch(FORMSPREE_RSVP_URL, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: dataRSVP
+    }).catch(()=>{ /* senyap sahaja jika gagal — mesej terima kasih tetap terpapar */ });
   }
 
   // --- Hantar ucapan — dipaparkan serta-merta DAN dihantar ke Formspree ---
   // EDIT: URL Formspree — tukar kalau anda buat borang baharu di formspree.io
-  const FORMSPREE_UCAPAN_URL = 'https://formspree.io/f/xbgjokzb';
+  const FORMSPREE_UCAPAN_URL = 'https://formspree.io/f/xgaezked';
 
   function hantarUcapan(){
     const nama = document.getElementById('ucapan-nama').value.trim();
