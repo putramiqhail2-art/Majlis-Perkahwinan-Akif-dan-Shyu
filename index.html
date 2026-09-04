@@ -293,6 +293,13 @@
   .reaksi__btn.dipilih{ background:var(--c-gold); color:var(--c-bg-deep); border-color:var(--c-gold); }
   .reaksi__count{ font-weight:600; }
 
+  /* Animasi slaid masuk untuk ucapan baharu */
+  @keyframes ucapanMasuk{
+    0%{ opacity:0; transform:translateX(-26px); }
+    100%{ opacity:1; transform:translateX(0); }
+  }
+  .ucapan--masuk{ animation: ucapanMasuk .55s cubic-bezier(.19,1,.22,1) both; }
+
   .form-row{ display:flex; flex-direction:column; gap:10px; margin-top:16px; }
   .form-row input, .form-row textarea, .form-row select{
     background:var(--c-bg-warm); border:1px solid var(--c-line); color:var(--c-ink);
@@ -565,9 +572,9 @@
     <section class="sec" id="sec-ucapan">
       <p class="eyebrow">Buku ucapan</p>
       <div class="reaksi" id="reaksi-bar">
-        <button class="reaksi__btn" onclick="tambahReaksi(this,'love')">💛 <span class="reaksi__count">12</span></button>
-        <button class="reaksi__btn" onclick="tambahReaksi(this,'doa')">🤲 <span class="reaksi__count">8</span></button>
-        <button class="reaksi__btn" onclick="tambahReaksi(this,'tahniah')">🎉 <span class="reaksi__count">15</span></button>
+        <button class="reaksi__btn" data-jenis="love" onclick="tambahReaksi(this,'love')">💛 <span class="reaksi__count">0</span></button>
+        <button class="reaksi__btn" data-jenis="doa" onclick="tambahReaksi(this,'doa')">🤲 <span class="reaksi__count">0</span></button>
+        <button class="reaksi__btn" data-jenis="tahniah" onclick="tambahReaksi(this,'tahniah')">🎉 <span class="reaksi__count">0</span></button>
       </div>
       <div class="kad-krim" style="background:transparent;box-shadow:none;padding:0;">
         <div class="ucapan-list" id="senarai-ucapan">
@@ -679,6 +686,29 @@
 
 </div>
 
+<!-- ================================================================
+     FIREBASE — pangkalan data PERCUMA untuk kongsi buku ucapan &
+     kiraan reaksi dengan SEMUA tetamu secara masa nyata.
+     EDIT: Firebase — lihat arahan setup dalam mesej chat, kemudian
+     gantikan firebaseConfig di bawah dengan config projek awak sendiri.
+     ================================================================ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+  // EDIT: Firebase — tampal config dari Firebase Console > Project settings
+  // > Your apps > (ikon web </>) di sini, gantikan semua "ISI_..." di bawah
+  const firebaseConfig = {
+    apiKey: "AIzaSyBWWhbSd3KQF10DsF9yV02xqcT0ZwdFKd0",
+    authDomain: "perkahwinan-abekih.firebaseapp.com",
+    projectId: "perkahwinan-abekih",
+    storageBucket: "perkahwinan-abekih.firebasestorage.app",
+    messagingSenderId: "100609966164",
+    appId: "1:100609966164:web:1d9b61227e836c3176edc1"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+</script>
+
 <script>
   /* ================================================================
      7. LOGIK / INTERAKTIVITI (JavaScript biasa, tiada rangka kerja luar)
@@ -777,7 +807,8 @@
     }).catch(()=>{ /* senyap sahaja jika gagal — mesej terima kasih tetap terpapar */ });
   }
 
-  // --- Hantar ucapan — dipaparkan serta-merta DAN dihantar ke Formspree ---
+  // --- Hantar ucapan — disimpan ke Firestore (supaya SEMUA tetamu nampak &
+  //     kekal lepas refresh) DAN dihantar ke Formspree (emel makluman) ---
   // EDIT: URL Formspree — tukar kalau anda buat borang baharu di formspree.io
   const FORMSPREE_UCAPAN_URL = 'https://formspree.io/f/xgaezked';
 
@@ -786,13 +817,15 @@
     const teks = document.getElementById('ucapan-teks').value.trim();
     if(!nama || !teks){ alert('Sila isikan nama dan ucapan.'); return; }
 
-    // 1) Papar serta-merta pada senarai (supaya tetamu nampak ucapan dia terus)
-    const wrap = document.createElement('div');
-    wrap.className = 'ucapan';
-    wrap.innerHTML = `<p class="ucapan__nama">${nama}</p><p class="ucapan__teks">${teks}</p>`;
-    document.getElementById('senarai-ucapan').prepend(wrap);
+    // 1) Simpan ke Firestore — onSnapshot() di bawah akan terus paparkan
+    //    ucapan ni (dengan animasi) kepada SEMUA tetamu yang sedang buka kad ni
+    db.collection('ucapan').add({
+      nama: nama,
+      teks: teks,
+      masa: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(err=>{ console.error('Gagal simpan ucapan ke Firestore:', err); });
 
-    // 2) Hantar ke Formspree supaya awak terima emel setiap kali ada ucapan baharu
+    // 2) Hantar jugak ke Formspree supaya awak dapat emel setiap kali ada ucapan baharu
     const dataUcapan = new FormData();
     dataUcapan.append('nama', nama);
     dataUcapan.append('ucapan', teks);
@@ -801,22 +834,91 @@
       method: 'POST',
       headers: { 'Accept': 'application/json' },
       body: dataUcapan
-    }).catch(()=>{ /* senyap sahaja jika gagal — ucapan tetap terpapar di skrin tetamu */ });
+    }).catch(()=>{ /* senyap sahaja jika gagal — ucapan tetap tersimpan di Firestore */ });
 
     document.getElementById('ucapan-nama').value = '';
     document.getElementById('ucapan-teks').value = '';
     document.getElementById('ucapan-msg').style.display = 'block';
-    // NOTA: ucapan yang terpapar pada skrin ini akan hilang bila tetamu muat
-    // semula halaman (kerana tiada pangkalan data), TETAPI setiap ucapan yang
-    // dihantar tetap disimpan/emel kepada awak melalui Formspree di atas.
   }
 
-  // --- Reaksi pantas (buku ucapan) ---
+  // --- Papar satu ucapan dalam senarai (guna textContent, BUKAN innerHTML,
+  //     supaya selamat walau tetamu taip simbol HTML dalam ucapan mereka) ---
+  function paparSatuUcapan(data, animasi, letakAtas){
+    const wrap = document.createElement('div');
+    wrap.className = 'ucapan' + (animasi ? ' ucapan--masuk' : '');
+    const pNama = document.createElement('p');
+    pNama.className = 'ucapan__nama';
+    pNama.textContent = data.nama || '';
+    const pTeks = document.createElement('p');
+    pTeks.className = 'ucapan__teks';
+    pTeks.textContent = data.teks || '';
+    wrap.appendChild(pNama);
+    wrap.appendChild(pTeks);
+    const list = document.getElementById('senarai-ucapan');
+    if(letakAtas) list.prepend(wrap); else list.appendChild(wrap);
+  }
+
+  // --- Dengar perubahan ucapan secara masa nyata (real-time) dari Firestore ---
+  let ucapanMuatKaliPertama = true;
+  db.collection('ucapan').orderBy('masa', 'desc').limit(200)
+    .onSnapshot(snapshot => {
+      if(ucapanMuatKaliPertama){
+        // Muatan pertama: papar semua ucapan sedia ada (tanpa animasi, ikut
+        // susunan terbaru dahulu — sebab query dah orderBy('masa','desc'))
+        const list = document.getElementById('senarai-ucapan');
+        list.innerHTML = '';
+        snapshot.forEach(doc => paparSatuUcapan(doc.data(), false, false));
+        ucapanMuatKaliPertama = false;
+      } else {
+        // Selepas itu: hanya ucapan BAHARU sahaja yang di-slide masuk di atas
+        snapshot.docChanges().forEach(perubahan => {
+          if(perubahan.type === 'added'){
+            paparSatuUcapan(perubahan.doc.data(), true, true);
+          }
+        });
+      }
+    }, err => console.error('Gagal muatkan ucapan dari Firestore:', err));
+
+  // --- Reaksi pantas (buku ucapan) — kiraan dikongsi semua tetamu via Firestore ---
+  const reaksiRef = db.collection('reaksi').doc('kiraan');
+
+  // Cipta dokumen kiraan bermula 0 SEKALI SAHAJA jika ia belum wujud lagi
+  reaksiRef.get().then(doc => {
+    if(!doc.exists){
+      reaksiRef.set({ love:0, doa:0, tahniah:0 });
+    }
+  });
+
+  // Dengar kiraan secara masa nyata — setiap tetamu nampak angka yang SAMA & terkini
+  reaksiRef.onSnapshot(doc => {
+    if(!doc.exists) return;
+    const d = doc.data();
+    document.querySelectorAll('.reaksi__btn').forEach(btn=>{
+      const jenis = btn.dataset.jenis;
+      if(d[jenis] !== undefined){
+        btn.querySelector('.reaksi__count').textContent = d[jenis];
+      }
+    });
+  });
+
+  // Tandakan butang yang peranti ni dah pernah tekan (elak tekan berulang-ulang
+  // walaupun lepas refresh — guna localStorage peranti sendiri)
+  document.querySelectorAll('.reaksi__btn').forEach(btn=>{
+    if(localStorage.getItem('reaksi_' + btn.dataset.jenis)){
+      btn.classList.add('dipilih');
+    }
+  });
+
   function tambahReaksi(btn, jenis){
-    if(btn.classList.contains('dipilih')) return; // elak klik berulang
+    if(btn.classList.contains('dipilih')) return; // elak klik berulang dari peranti sama
     btn.classList.add('dipilih');
-    const countEl = btn.querySelector('.reaksi__count');
-    countEl.textContent = parseInt(countEl.textContent, 10) + 1;
+    localStorage.setItem('reaksi_' + jenis, '1');
+    reaksiRef.update({ [jenis]: firebase.firestore.FieldValue.increment(1) })
+      .catch(err=>{
+        console.error('Gagal tambah reaksi:', err);
+        btn.classList.remove('dipilih');
+        localStorage.removeItem('reaksi_' + jenis);
+      });
   }
 
   // --- Salin nombor akaun ---
