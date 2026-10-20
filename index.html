@@ -394,6 +394,38 @@
   .tl__body{ padding-top:6px; }
   .tl__time{ font-family:var(--f-display); font-weight:600; font-size:18px; color:var(--c-ink); }
   .tl__label{ font-size:12.5px; letter-spacing:.03em; color:var(--c-ink-soft); text-transform:uppercase; margin-top:2px; }
+
+  /* --- Buku ucapan: slaid automatik (6 ucapan setiap slaid, tukar setiap 10 saat) --- */
+  .ucapan-slider{ position:relative; margin-top:14px; }
+  .ucapan-list.ucapan-track{ display:grid; gap:0; margin-top:0; overflow:hidden; }
+  .ucapan-slaid{
+    grid-area:1/1; display:flex; flex-direction:column; gap:12px;
+    opacity:0; transform:translateX(36px); pointer-events:none;
+    transition:opacity .7s ease, transform .8s cubic-bezier(.19,1,.22,1);
+  }
+  .ucapan-slaid.aktif{ opacity:1; transform:none; pointer-events:auto; }
+  .ucapan-slaid.lepas{ opacity:0; transform:translateX(-36px); }
+  .ucapan-slaid .ucapan__teks{ display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .ucapan-slaid.aktif .ucapan{
+    animation:ucapanNaik .6s cubic-bezier(.19,1,.22,1) both;
+    animation-delay:calc(var(--i) * 80ms + 200ms);
+  }
+  @keyframes ucapanNaik{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+  .ucapan-dots{ display:flex; justify-content:center; gap:8px; margin-top:14px; }
+  .ucapan-dots button{
+    width:8px; height:8px; padding:0; border:none; border-radius:999px;
+    background:var(--c-line); transition:width .3s ease, background .3s ease;
+  }
+  .ucapan-dots button.aktif{ width:22px; background:var(--c-gold); }
+  .ucapan-progress{ height:2px; background:var(--c-line); border-radius:2px; margin-top:10px; overflow:hidden; }
+  .ucapan-progress span{ display:block; height:100%; background:var(--c-gold); transform-origin:left; transform:scaleX(0); }
+  .ucapan-progress span.jalan{ animation:ucapanProgress linear forwards; }
+  @keyframes ucapanProgress{ from{ transform:scaleX(0); } to{ transform:scaleX(1); } }
+  .ucapan-kosong{ font-size:13px; opacity:.7; text-align:center; padding:18px 0; }
+  @media (prefers-reduced-motion:reduce){
+    .ucapan-slaid, .ucapan-slaid.aktif .ucapan{ transition:none; animation:none; }
+    .ucapan-progress span.jalan{ animation:none; }
+  }
 </style>
 </head>
 <body>
@@ -576,9 +608,11 @@
         <button class="reaksi__btn" data-jenis="tahniah" onclick="tambahReaksi(this,'tahniah')">🎉 <span class="reaksi__count">0</span></button>
       </div>
       <div class="kad-krim" style="background:transparent;box-shadow:none;padding:0;">
-        <div class="ucapan-list" id="senarai-ucapan">
-          <!-- Kosong sengaja — ucapan tetamu disimpan ke Firestore dan dipaparkan di sini,
-               jadi tiada data contoh diletakkan di sini. -->
+        <div class="ucapan-slider" id="ucapan-slider">
+          <!-- Kosong sengaja — slaid ucapan dijana oleh JavaScript daripada Firestore -->
+          <div class="ucapan-list ucapan-track" id="senarai-ucapan"></div>
+          <div class="ucapan-dots" id="ucapan-dots"></div>
+          <div class="ucapan-progress"><span id="ucapan-progress"></span></div>
         </div>
 
         <div class="form-row">
@@ -849,46 +883,123 @@
     }).finally(()=>{ btn.disabled = false; });
   }
 
-  // --- Papar satu ucapan dalam senarai (guna textContent, BUKAN innerHTML,
-  //     supaya selamat walau tetamu taip simbol HTML dalam ucapan mereka) ---
-  function paparSatuUcapan(data, animasi, letakAtas){
-    const wrap = document.createElement('div');
-    wrap.className = 'ucapan' + (animasi ? ' ucapan--masuk' : '');
-    const pNama = document.createElement('p');
-    pNama.className = 'ucapan__nama';
-    pNama.textContent = data.nama || '';
-    const pTeks = document.createElement('p');
-    pTeks.className = 'ucapan__teks';
-    pTeks.textContent = data.teks || '';
-    wrap.appendChild(pNama);
-    wrap.appendChild(pTeks);
-    const list = document.getElementById('senarai-ucapan');
-    if(letakAtas) list.prepend(wrap); else list.appendChild(wrap);
+  // --- Buku ucapan berbentuk SLAID: 6 ucapan setiap slaid, bertukar setiap 10 saat ---
+  const UCAPAN_PER_SLAID  = 6;      // bilangan ucapan setiap slaid
+  const UCAPAN_MASA_SLAID = 10000;  // 10 saat (milisaat) — tukar kalau nak lebih laju/perlahan
+  let semuaUcapan = [];             // terbaru dahulu
+  let slaidSemasa = 0, slaidTimer = null, slaidDijeda = false;
+
+  // Semua teks dimasukkan guna textContent (BUKAN innerHTML) supaya selamat
+  // walau tetamu taip simbol HTML dalam ucapan mereka.
+  function binaSlaid(mulaDariAwal){
+    const track = document.getElementById('senarai-ucapan');
+    const dots  = document.getElementById('ucapan-dots');
+    track.innerHTML = ''; dots.innerHTML = '';
+    clearTimeout(slaidTimer);
+    document.getElementById('ucapan-progress').className = '';
+
+    if(!semuaUcapan.length){
+      const p = document.createElement('p');
+      p.className = 'ucapan-kosong';
+      p.textContent = 'Jadilah orang pertama menulis ucapan \u{1F49B}';
+      track.appendChild(p);
+      return;
+    }
+    const jumlah = Math.ceil(semuaUcapan.length / UCAPAN_PER_SLAID);
+    if(mulaDariAwal || slaidSemasa >= jumlah) slaidSemasa = 0;
+
+    for(let s = 0; s < jumlah; s++){
+      const slaid = document.createElement('div');
+      slaid.className = 'ucapan-slaid';
+      semuaUcapan.slice(s * UCAPAN_PER_SLAID, (s + 1) * UCAPAN_PER_SLAID).forEach((d, i) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'ucapan';
+        wrap.style.setProperty('--i', i);
+        const pNama = document.createElement('p');
+        pNama.className = 'ucapan__nama';
+        pNama.textContent = d.nama || '';
+        const pTeks = document.createElement('p');
+        pTeks.className = 'ucapan__teks';
+        pTeks.textContent = d.teks || '';
+        wrap.appendChild(pNama);
+        wrap.appendChild(pTeks);
+        slaid.appendChild(wrap);
+      });
+      track.appendChild(slaid);
+
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.setAttribute('aria-label', 'Slaid ' + (s + 1));
+      dot.onclick = () => tunjukSlaid(s);
+      dots.appendChild(dot);
+    }
+    tunjukSlaid(slaidSemasa, true);
   }
+
+  function tunjukSlaid(n, tanpaLepas){
+    const slaids = document.querySelectorAll('#senarai-ucapan .ucapan-slaid');
+    const dots   = document.querySelectorAll('#ucapan-dots button');
+    if(!slaids.length) return;
+    const lama = slaidSemasa;
+    slaids.forEach((el, i) => {
+      el.classList.toggle('aktif', i === n);
+      el.classList.toggle('lepas', !tanpaLepas && i === lama && i !== n);
+    });
+    dots.forEach((d, i) => d.classList.toggle('aktif', i === n));
+    slaidSemasa = n;
+    mulaTimerSlaid();
+  }
+
+  function mulaTimerSlaid(){
+    clearTimeout(slaidTimer);
+    const bar = document.getElementById('ucapan-progress');
+    bar.className = '';
+    const jumlah = document.querySelectorAll('#senarai-ucapan .ucapan-slaid').length;
+    if(jumlah < 2 || slaidDijeda) return;
+    void bar.offsetWidth; // mulakan semula animasi bar kemajuan
+    bar.style.animationDuration = UCAPAN_MASA_SLAID + 'ms';
+    bar.className = 'jalan';
+    slaidTimer = setTimeout(() => tunjukSlaid((slaidSemasa + 1) % jumlah), UCAPAN_MASA_SLAID);
+  }
+
+  // Jeda bila tetikus berada di atas slaid (komputer); leret kiri/kanan di telefon
+  (function(){
+    const slider = document.getElementById('ucapan-slider');
+    slider.addEventListener('pointerenter', e => {
+      if(e.pointerType !== 'mouse') return;
+      slaidDijeda = true; clearTimeout(slaidTimer);
+      document.getElementById('ucapan-progress').className = '';
+    });
+    slider.addEventListener('pointerleave', e => {
+      if(e.pointerType !== 'mouse') return;
+      slaidDijeda = false; mulaTimerSlaid();
+    });
+    let sentuhX = null;
+    slider.addEventListener('touchstart', e => { sentuhX = e.touches[0].clientX; }, {passive:true});
+    slider.addEventListener('touchend', e => {
+      if(sentuhX === null) return;
+      const dx = e.changedTouches[0].clientX - sentuhX; sentuhX = null;
+      const jumlah = document.querySelectorAll('#senarai-ucapan .ucapan-slaid').length;
+      if(Math.abs(dx) > 40 && jumlah > 1){
+        tunjukSlaid(dx < 0 ? (slaidSemasa + 1) % jumlah : (slaidSemasa - 1 + jumlah) % jumlah);
+      }
+    }, {passive:true});
+  })();
 
   // --- Dengar perubahan ucapan secara masa nyata (real-time) dari Firestore ---
   let ucapanMuatKaliPertama = true;
   db.collection('ucapan').orderBy('masa', 'desc').limit(50)
     .onSnapshot(snapshot => {
-      if(ucapanMuatKaliPertama){
-        // Muatan pertama: papar semua ucapan sedia ada (tanpa animasi, ikut
-        // susunan terbaru dahulu — sebab query dah orderBy('masa','desc'))
-        const list = document.getElementById('senarai-ucapan');
-        list.innerHTML = '';
-        snapshot.forEach(doc => paparSatuUcapan(doc.data(), false, false));
-        ucapanMuatKaliPertama = false;
-      } else {
-        // Selepas itu: hanya ucapan BAHARU sahaja yang di-slide masuk di atas
-        snapshot.docChanges().forEach(perubahan => {
-          if(perubahan.type === 'added'){
-            paparSatuUcapan(perubahan.doc.data(), true, true);
-          }
-        });
-      }
+      // 'modified' = cuma cap masa pelayan disahkan; tak perlu bina semula slaid
+      const adaPerubahan = snapshot.docChanges().some(c => c.type !== 'modified');
+      if(!adaPerubahan && !ucapanMuatKaliPertama) return;
+      semuaUcapan = snapshot.docs.map(d => d.data());
+      binaSlaid(!ucapanMuatKaliPertama); // ucapan baharu masuk → terus ke slaid pertama
+      ucapanMuatKaliPertama = false;
     }, err => {
       console.error('Gagal muatkan ucapan dari Firestore:', err);
-      const l = document.getElementById('senarai-ucapan');
-      l.innerHTML = '<p style="font-size:12.5px;opacity:.7">Ucapan belum dapat dimuatkan.</p>';
+      const track = document.getElementById('senarai-ucapan');
+      track.innerHTML = '<p class="ucapan-kosong">Ucapan belum dapat dimuatkan.</p>';
     });
 
   // --- Reaksi pantas (buku ucapan) — kiraan dikongsi semua tetamu via Firestore ---
