@@ -1032,15 +1032,25 @@
     }
   });
 
+  // Tekan = tambah reaksi (+1), tekan lagi = batalkan (-1). Status disimpan dalam
+  // browser peranti ni supaya selepas refresh butang masih menunjukkan pilihan anda.
   function tambahReaksi(btn, jenis){
-    if(btn.classList.contains('dipilih')) return; // elak klik berulang dari peranti sama
-    btn.classList.add('dipilih');
-    localStorage.setItem('reaksi_' + jenis, '1');
-    reaksiRef.update({ [jenis]: firebase.firestore.FieldValue.increment(1) })
-      .catch(err=>{
-        console.error('Gagal tambah reaksi:', err);
-        btn.classList.remove('dipilih');
-        localStorage.removeItem('reaksi_' + jenis);
+    if(btn.dataset.sibuk) return;                       // elak tekan laju-laju
+    btn.dataset.sibuk = '1';
+    setTimeout(() => { delete btn.dataset.sibuk; }, 600);
+
+    const sudahPilih = btn.classList.contains('dipilih');
+    const ubahStatus = (dipilih) => {
+      btn.classList.toggle('dipilih', dipilih);
+      if(dipilih) localStorage.setItem('reaksi_' + jenis, '1');
+      else localStorage.removeItem('reaksi_' + jenis);
+    };
+
+    ubahStatus(!sudahPilih);                            // kemas kini serta-merta
+    reaksiRef.update({ [jenis]: firebase.firestore.FieldValue.increment(sudahPilih ? -1 : 1) })
+      .catch(err => {
+        console.error('Gagal kemas kini reaksi:', err);
+        ubahStatus(sudahPilih);                         // gagal → pulihkan keadaan asal
       });
   }
 
