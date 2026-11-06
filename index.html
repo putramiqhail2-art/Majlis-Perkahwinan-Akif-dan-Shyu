@@ -813,6 +813,22 @@
   // --- Hantar RSVP — disimpan terus ke Firestore (koleksi "rsvp") ---
   // Senarai RSVP PRIVATE: tetamu hanya boleh tambah, tak boleh baca. Awak lihat
   // senarai penuh di Firebase Console > Firestore Database > Data > rsvp.
+  // Anti-duplicate: ID dokumen = nama yang dinormalkan, jadi nama sama => dokumen sama.
+  function rsvpId(nama){
+    const id = nama.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60);
+    return id || ('tetamu-' + Date.now());
+  }
+  function sudahHantar(id){
+    try { return localStorage.getItem('rsvp_hantar_' + id) === '1'; } catch(e){ return false; }
+  }
+  function tandaHantar(id){
+    try { localStorage.setItem('rsvp_hantar_' + id, '1'); } catch(e){}
+  }
+
   function hantarRSVP(){
     const nama  = document.getElementById('rsvp-nama').value.trim();
     const hadir = document.getElementById('rsvp-hadir').value;
@@ -824,27 +840,40 @@
     if(hadir === 'ya' && (!bil || bil < 1)){ alert('Sila isikan bilangan tetamu.'); return; }
     bil = Math.min(bil, 20); // had maksimum 20 seorang (sepadan dengan Firestore rules)
 
+    const docId = rsvpId(nama);
+    if(sudahHantar(docId)){
+      msg.style.display = 'block';
+      msg.style.color = '';
+      msg.textContent = 'Kehadiran atas nama ini sudah direkodkan. Terima kasih! \u{1F49B}';
+      return;
+    }
+
     btn.disabled = true;
     msg.style.display = 'block';
     msg.style.color = '';
     msg.textContent = 'Menghantar...';
 
-    db.collection('rsvp').add({
+    db.collection('rsvp').doc(docId).set({
       nama: nama.slice(0, 60),
       status: hadir === 'ya' ? 'Hadir' : 'Tidak Hadir',
       bilangan: bil,
       masa: firebase.firestore.FieldValue.serverTimestamp()
     }).then(()=>{
+      tandaHantar(docId);
       msg.textContent = hadir === 'ya'
         ? 'Terima kasih! Kehadiran anda telah direkodkan. \u{1F49B}'
         : 'Terima kasih kerana memaklumkan. Semoga bertemu lain kali. \u{1F49B}';
       document.getElementById('rsvp-nama').value = '';
     }).catch(err=>{
       console.error('Gagal simpan RSVP ke Firestore:', err);
-      msg.style.color = '#b00020';
-      msg.textContent = (err && err.code === 'permission-denied')
-        ? 'RSVP ditolak oleh pangkalan data (Firestore rules belum dibenarkan).'
-        : 'Maaf, RSVP gagal dihantar. Sila cuba lagi.';
+      if(err && err.code === 'permission-denied'){
+        // Dokumen dengan nama ini sudah wujud (rules hanya benarkan 'create')
+        tandaHantar(docId);
+        msg.textContent = 'Kehadiran atas nama ini sudah direkodkan. Terima kasih! \u{1F49B}';
+      } else {
+        msg.style.color = '#b00020';
+        msg.textContent = 'Maaf, RSVP gagal dihantar. Sila cuba lagi.';
+      }
     }).finally(()=>{ btn.disabled = false; });
   }
 
